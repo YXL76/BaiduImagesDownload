@@ -1,3 +1,5 @@
+import os
+import re
 import requests
 from tqdm import tqdm
 from mimetypes import guess_extension
@@ -12,9 +14,8 @@ class Crawler:
                       'Chrome/80.0.3987.149 Safari/537.36 '
     }
     __base_url = 'https://image.baidu.com/search/index'
-    __session = HTMLSession()
 
-    def __init__(self, interval: float = 0.1):
+    def __init__(self, interval: float = 0.01):
         self.__interval = interval
         self.__params = {
             'ie': 'utf-8',
@@ -34,34 +35,55 @@ class Crawler:
         self.__params['queryWord'] = word
         self.__params['word'] = word
 
-        while loaded < num:
-            res = self.__session.get(self.__base_url, params=self.__params, headers=self.__headers)
-            if res.status_code != 200:
-                print('----ERROR---获取图片url失败')
-                return False
-            res.html.render()
-            imgs = res.html.find('img.main_img')
-            for i in imgs:
-                self.__urls.append(i.attrs['data-imgurl'])
-            length = len(imgs)
-            loaded += length
-            self.__params['pn'] += length
+        res = HTMLSession().get(
+            self.__base_url, params=self.__params, headers=self.__headers)
+        if res.status_code != 200:
+            print('----ERROR---获取图片url失败')
+            return False
+        result_info = res.html.find('#resultInfo')
+        total = int(re.findall(r'(\d+)', result_info[0].text)[0])
+        if total < num:
+            num = total
+            print('----WARM----图片数量不足')
+
+        with tqdm(total=num, desc='获取url：') as pbar:
+            while loaded < num:
+                res = HTMLSession().get(
+                    self.__base_url, params=self.__params, headers=self.__headers)
+                if res.status_code != 200:
+                    print('----ERROR---获取图片url失败')
+                    return False
+                res.html.render()
+                imgs = res.html.find('.main_img')
+                for i in imgs:
+                    self.__urls.append(i.attrs['data-imgurl'])
+                length = len(imgs)
+                self.__params['pn'] += length
+                if self.__params['pn'] >= num:
+                    pbar.update(num - loaded)
+                loaded += length
+                sleep(self.__interval)
+        self.__urls = self.__urls[0:num]
 
         print('----INFO----获取图片url成功')
         return True
 
-    def download_images(self):
+    def download_images(self, folder: str = 'download'):
         file_name = Template('${name}${ext}')
-        for i in tqdm(range(len(self.__urls))):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        for i in tqdm(range(len(self.__urls)), desc='下载图片：'):
             res = requests.get(self.__urls[i], headers=self.__headers)
             if res.status_code != 200:
                 print('----ERROR---下载图片失败')
-            ext = guess_extension(res.headers['content-type'].partition(';')[0].strip())
+            ext = guess_extension(
+                res.headers['content-type'].partition(';')[0].strip())
             if ext in ('.jpe', '.jpeg'):
                 ext = '.jpg'
-            with open(file_name.substitute(name=(i + 1), ext=ext), 'wb') as f:
+            with open(os.path.join(folder, file_name.substitute(name=(i + 1), ext=ext)), 'wb') as f:
                 f.write(res.content)
             sleep(self.__interval)
+    print('----INFO----下载图片成功')
 
     def start(self, word: str, num: int):
         if self.get_images_url(word, num):
