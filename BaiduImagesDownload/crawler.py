@@ -1,4 +1,9 @@
+import requests
+from tqdm import tqdm
+from mimetypes import guess_extension
 from requests_html import HTMLSession
+from string import Template
+from time import sleep
 
 
 class Crawler:
@@ -46,7 +51,17 @@ class Crawler:
         return True
 
     def download_images(self):
-        pass
+        file_name = Template('${name}${ext}')
+        for i in tqdm(range(len(self.__urls))):
+            res = requests.get(self.__urls[i], headers=self.__headers)
+            if res.status_code != 200:
+                print('----ERROR---下载图片失败')
+            ext = guess_extension(res.headers['content-type'].partition(';')[0].strip())
+            if ext in ('.jpe', '.jpeg'):
+                ext = '.jpg'
+            with open(file_name.substitute(name=(i + 1), ext=ext), 'wb') as f:
+                f.write(res.content)
+            sleep(self.__interval)
 
     def start(self, word: str, num: int):
         if self.get_images_url(word, num):
