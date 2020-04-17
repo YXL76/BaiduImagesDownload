@@ -61,6 +61,9 @@ class Crawler:
         urls['from_url'].append('')
         return urls
 
+    def __check_type(self, mime_type: str):
+        pass
+
     def clear(self) -> None:
         self.__params['pn'] = 0
         self.__urls.clear()
@@ -113,29 +116,31 @@ class Crawler:
 
     def download_images(self, num: int = None, folder: str = 'download') -> bool:
         self.__mkdir_download(folder)
+        if num is None:
+            num = len(self.__urls)
+        elif num > len(self.__urls):
+            num = len(self.__urls)
+            print('----WARM----图片数量不足, 只有', num, '张')
         failed = []
-        for i in tqdm(range(len(self.__urls)), desc='下载图片'):
-            img = self.__urls[i]
-            urls = []
-            if 'replaceUrl' in img:
-                for url in img['replaceUrl']:
-                    urls.append(url['ObjURL'])
-            urls.append(img['thumbURL'])
-            res = ''
-            for url in urls:
-                split_url = urlsplit(url)
+        headers = self.__HEADERS.copy()
+        for i in tqdm(range(num), desc='下载图片'):
+            res = None
+
+            for j in range(len(self.__urls[i]['obj_url'])):
+                obj_url = self.__urls[i]['obj_url'][j]
+                from_url = self.__urls[i]['from_url'][j]
                 referer = {
-                    'Referer': split_url.scheme + '://' + split_url.netloc
+                    'Referer': from_url
                 }
-                headers = self.__HEADERS.copy()
                 headers.update(referer)
                 try:
-                    res = get(url, headers=headers)
+                    res = get(obj_url, headers=headers)
                     if res.status_code == 200:
                         break
                 except ProxyError:
                     pass
-            if res == '':
+
+            if res is None:
                 failed.append(i + 1)
                 continue
 
@@ -145,6 +150,7 @@ class Crawler:
                 ext = '.jpg'
             with open(join(folder, self.__FILENAME_TEMPLATE.substitute(name=(i + 1), ext=ext)), 'wb') as f:
                 f.write(res.content)
+
             sleep(self.__interval)
 
         print('----INFO----图片下载结束')
@@ -155,7 +161,7 @@ class Crawler:
 
     def start(self, word: str, num: int):
         self.clear()
-        if self.get_images_url(word, num * 2):
+        if self.get_images_url(word, int(num * 1.5)):
             self.download_images(num)
 
 
