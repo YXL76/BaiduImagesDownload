@@ -61,8 +61,15 @@ class Crawler:
         urls['from_url'].append('')
         return urls
 
-    def __check_type(self, mime_type: str):
-        pass
+    @staticmethod
+    def __check_type(mime_type: str, rule: tuple):
+        allow = False
+        ext = guess_extension(mime_type)
+        if ext in ('.jpe', '.jpeg'):
+            ext = '.jpg'
+        if ext in rule:
+            allow = True
+        return allow, ext
 
     def clear(self) -> None:
         self.__params['pn'] = 0
@@ -96,9 +103,13 @@ class Crawler:
 
                 length = 0
                 for img in content['data']:
-                    if 'objURL' in img:
+                    if 'thumbURL' in img and img['thumbURL'] != '':
                         self.__urls.append(self.__solve_imgdata(img))
                         length += 1
+
+                if length == 0:
+                    pbar.update(num - loaded)
+                    break
 
                 self.__params['pn'] += self.__PAGE_NUM
                 loaded += length
@@ -110,11 +121,12 @@ class Crawler:
                 sleep(self.__interval)
 
         print('----INFO----获取图片url成功')
-        self.__urls = self.__urls[0:num]
+        if len(self.__urls) > num:
+            self.__urls = self.__urls[0:num]
         sleep(0.4)
         return True
 
-    def download_images(self, num: int = None, folder: str = 'download') -> bool:
+    def download_images(self, rule: tuple, num: int = None, folder: str = 'download') -> bool:
         self.__mkdir_download(folder)
         if num is None:
             num = len(self.__urls)
@@ -125,6 +137,8 @@ class Crawler:
         headers = self.__HEADERS.copy()
         for i in tqdm(range(num), desc='下载图片'):
             res = None
+            ext = None
+            allow = False
 
             for j in range(len(self.__urls[i]['obj_url'])):
                 obj_url = self.__urls[i]['obj_url'][j]
@@ -136,18 +150,18 @@ class Crawler:
                 try:
                     res = get(obj_url, headers=headers)
                     if res.status_code == 200:
-                        break
+                        allow, ext = self.__check_type(res.headers['content-type'].partition(';')[0].strip(), rule)
+                        if allow is False:
+                            continue
+                        else:
+                            break
                 except ProxyError:
                     pass
 
-            if res is None:
-                failed.append(i + 1)
+            if res is None or allow is False:
+                failed.append(str(i + 1))
                 continue
 
-            ext = guess_extension(
-                res.headers['content-type'].partition(';')[0].strip())
-            if ext in ('.jpe', '.jpeg'):
-                ext = '.jpg'
             with open(join(folder, self.__FILENAME_TEMPLATE.substitute(name=(i + 1), ext=ext)), 'wb') as f:
                 f.write(res.content)
 
@@ -159,10 +173,12 @@ class Crawler:
             return False
         return True
 
-    def start(self, word: str, num: int):
+    def start(self, word: str, num: int, rule: tuple = None):
         self.clear()
+        if rule is None:
+            rule = ('.png', '.jpg')
         if self.get_images_url(word, int(num * 1.5)):
-            self.download_images(num)
+            self.download_images(rule, num)
 
 
 if __name__ == '__main__':
