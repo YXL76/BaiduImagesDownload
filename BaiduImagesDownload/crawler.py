@@ -23,7 +23,8 @@ class Crawler:
     __CONCURRENT_NUM = 100
     __CONCURRENT_TIMEOUT = 60
     __OBJURL_TABLE = {'_z2C$q': ':', '_z&e3B': '.', 'AzdH3F': '/'}
-    __OBJURL_TRANS = str.maketrans('0123456789abcdefghijklmnopqrstuvw', '7dgjmoru140852vsnkheb963wtqplifca')
+    __OBJURL_TRANS = str.maketrans(
+        '0123456789abcdefghijklmnopqrstuvw', '7dgjmoru140852vsnkheb963wtqplifca')
     __FILENAME_TEMPLATE = Template('${name}${ext}')
 
     def __init__(self, timeout: float = __CONCURRENT_TIMEOUT):
@@ -59,7 +60,7 @@ class Crawler:
             if 'objURL' in img:
                 urls['obj_url'].append(__decode_objurl(img['objURL']))
                 urls['from_url'].append(__decode_objurl(img['fromURL']))
-            if 'replaceUrl' in img and len(img['replaceUrl']) == 2:
+            elif 'replaceUrl' in img and len(img['replaceUrl']) == 2:
                 urls['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
                 urls['from_url'].append(img['replaceUrl'][0]['FromURL'])
             urls['obj_url'].append(img['thumbURL'])
@@ -100,7 +101,8 @@ class Crawler:
                 print('----ERROR---获取图片url失败')
                 return False
 
-            display_num = search(r'\"displayNum\":(\d+)', r.read().decode('utf-8'))
+            display_num = search(r'\"displayNum\":(\d+)',
+                                 r.read().decode('utf-8'))
             display_num = int(display_num.group(1))
             total = min(total, display_num)
             if display_num < num:
@@ -108,7 +110,8 @@ class Crawler:
 
         with tqdm(total=total, desc='获取url', miniters=1) as pbar:
             loop = get_event_loop()
-            tasks = [ensure_future(__fetch(i)) for i in range(0, total, self.__PAGE_NUM)]
+            tasks = [ensure_future(__fetch(i))
+                     for i in range(0, total, self.__PAGE_NUM)]
             tasks = gather(*tasks)
             loop.run_until_complete(tasks)
 
