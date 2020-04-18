@@ -5,12 +5,12 @@ from mimetypes import guess_extension
 from os import listdir, mkdir
 from os.path import exists, join, splitext
 from re import search
-from requests import get
 from shutil import copyfile
 from string import Template
 from tempfile import TemporaryDirectory
-from time import sleep
 from tqdm import tqdm
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
 class Crawler:
@@ -44,14 +44,14 @@ class Crawler:
         self.__params['pn'] = 0
         self.__urls.clear()
 
-    def get_images_url(self, word: str, num: int) -> bool:
+    def get_images_url(self, word: str, num: int, total: int) -> bool:
 
         def __decode_objurl(url: str) -> str:
             for key, value in self.__OBJURL_TABLE.items():
                 url = url.replace(key, value)
             return url.translate(self.__OBJURL_TRANS)
 
-        def __solve_imgdata() -> dict:
+        def __solve_imgdata(img: dict) -> dict:
             urls = {
                 'obj_url': [],
                 'from_url': []
@@ -66,50 +66,55 @@ class Crawler:
             urls['from_url'].append('')
             return urls
 
+        async def __fetch(pn: int) -> None:
+            nonlocal loaded
+            params = self.__params.copy()
+            params['pn'] = pn
+            length = 0
+
+            async with ClientSession(timeout=ClientTimeout(total=self.__timeout)) as session:
+                async with session.get(self.__BASE_URL, params=params, headers=self.__HEADERS) as res:
+                    if res.status == 200:
+                        text = await res.text()
+                        text = loads(text.replace(r'\'', ''), strict=False)
+
+                        for img in text['data']:
+                            if 'thumbURL' in img and img['thumbURL'] != '':
+                                self.__urls.append(__solve_imgdata(img))
+                                length += 1
+                    else:
+                        print('----ERROR---获取图片url失败')
+
+            loaded += length
+            pbar.update(total - loaded + length if loaded > total else length)
+
         loaded = 0
         self.__params['pn'] = 0
         self.__params['queryWord'] = word
         self.__params['word'] = word
 
-        with get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS) as res:
-            if res.status_code != 200:
+        print('----INFO----开始获取图片url')
+
+        with urlopen((self.__BASE_URL + '?%s') % urlencode(self.__params)) as r:
+            if r.status != 200:
                 print('----ERROR---获取图片url失败')
                 return False
 
-            display_num = search(r'\"displayNum\":(\d+)', res.text)
+            display_num = search(r'\"displayNum\":(\d+)', r.read().decode('utf-8'))
             display_num = int(display_num.group(1))
+            total = min(total, display_num)
             if display_num < num:
-                num = display_num
-                print('----WARM----图片数量不足, 只有', num, '张')
+                print('----WARM----图片数量不足, 只有', display_num, '张')
 
-        with tqdm(total=num, desc='获取url') as pbar:
-            while loaded < num:
-                with get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS) as res:
-                    if res.status_code != 200:
-                        print('----ERROR---获取图片url失败')
-                        return False
+        with tqdm(total=total, desc='获取url', miniters=1) as pbar:
+            loop = get_event_loop()
+            tasks = [ensure_future(__fetch(i)) for i in range(0, total, self.__PAGE_NUM)]
+            tasks = gather(*tasks)
+            loop.run_until_complete(tasks)
 
-                    content = loads(res.text.replace(r'\'', ''), strict=False)
-
-                    length = 0
-                    for img in content['data']:
-                        if 'thumbURL' in img and img['thumbURL'] != '':
-                            self.__urls.append(__solve_imgdata())
-                            length += 1
-
-                    if length == 0:
-                        pbar.update(num - loaded)
-                        break
-
-                    self.__params['pn'] += self.__PAGE_NUM
-                    loaded += length
-                    if loaded >= num:
-                        pbar.update(num - loaded + length)
-                    else:
-                        pbar.update(length)
+            pbar.update(total - loaded)
 
         print('----INFO----获取图片url成功')
-        sleep(0.4)
         return True
 
     def download_images(self, rule: tuple, num: int = None, folder: str = 'download') -> bool:
@@ -124,17 +129,18 @@ class Crawler:
             return allow, ext
 
         async def __fetch(session, obj_url: str, from_url: str, idx: int) -> bool:
+            headers = self.__HEADERS.copy()
             headers.update({'Referer': from_url})
             try:
                 async with session.get(obj_url, headers=headers, allow_redirects=False) as res:
-                    if res.status == 200:
+                    if res.status == 200 and 'content-type' in res.headers:
                         allow, ext = await __check_type(res.headers['content-type'].partition(';')[0].strip())
                         if allow is False:
                             return False
                         with open(join(tmpdirname, self.__FILENAME_TEMPLATE.substitute(name=idx, ext=ext)),
                                   mode='wb') as f:
                             while True:
-                                chunk = await res.content.read(10)
+                                chunk = await res.content.read(16)
                                 if not chunk:
                                     break
                                 f.write(chunk)
@@ -144,14 +150,17 @@ class Crawler:
 
         async def __fetch_all(url: dict, idx: int) -> None:
             nonlocal success
+            nonlocal failed
             allow = False
+
             for j in range(len(url['obj_url'])):
                 async with ClientSession(timeout=ClientTimeout(total=self.__timeout)) as session:
                     allow = await __fetch(session, url['obj_url'][j], url['from_url'][j], idx + 1)
                     if allow is True:
                         break
+
             if allow is False:
-                failed.append(idx + 1)
+                failed += 1
             elif success < num:
                 success += 1
                 pbar.update(1)
@@ -160,33 +169,38 @@ class Crawler:
             mkdir(folder)
 
         success = 0
-        failed = []
-        headers = self.__HEADERS.copy()
-        pbar = tqdm(total=num, desc='下载图片')
+        failed = 0
 
         if num is None or num > len(self.__urls):
             num = len(self.__urls)
 
-        with TemporaryDirectory() as tmpdirname:
-            for i in range(0, len(self.__urls), self.__CONCURRENT_NUM):
-                loop = get_event_loop()
-                tasks = [ensure_future(__fetch_all(url, i + idx))
-                         for idx, url in enumerate(self.__urls[i:i + self.__CONCURRENT_NUM])]
-                tasks = gather(*tasks)
-                loop.run_until_complete(tasks)
+        print('----INFO----开始图片下载')
 
-            num_length = len(str(num))
-            for idx, filename in enumerate(listdir(tmpdirname)):
-                if idx >= num:
-                    break
-                copyfile(join(tmpdirname, filename),
-                         join(folder, str(idx + 1).zfill(num_length) + splitext(filename)[1]))
+        with tqdm(total=num, desc='下载图片', miniters=1) as pbar:
+            with TemporaryDirectory() as tmpdirname:
+                for i in range(0, len(self.__urls), self.__CONCURRENT_NUM):
+                    loop = get_event_loop()
+                    tasks = [ensure_future(__fetch_all(url, i + idx))
+                             for idx, url in enumerate(self.__urls[i:i + self.__CONCURRENT_NUM])]
+                    tasks = gather(*tasks)
+                    loop.run_until_complete(tasks)
 
-        pbar.update(num - success)
-        pbar.close()
-        print('----INFO----图片下载结束')
+                pbar.update(num - success)
+
+                num_length = len(str(num))
+                files = listdir(tmpdirname)
+                for idx, filename in enumerate(files):
+                    if idx >= num:
+                        break
+                    success += 1
+                    copyfile(join(tmpdirname, filename),
+                             join(folder, str(idx + 1).zfill(num_length) + splitext(filename)[1]))
+
+                success = min(num, len(files))
+
+        print('----INFO----', success, '张图片下载成功')
         if failed:
-            print('----ERROR---', len(failed), '张图片下载失败')
+            print('----ERROR---', failed, '张图片下载失败')
             return False
         return True
 
@@ -194,11 +208,13 @@ class Crawler:
         self.clear()
         if rule is None:
             rule = ('.png', '.jpg')
-        if self.get_images_url(word, int(num * 1.5)):
+
+        if self.get_images_url(word, num, int(num * 1.5)):
             self.download_images(rule, num)
+
         self.clear()
 
 
 if __name__ == '__main__':
     crawler = Crawler()
-    crawler.start('二次元', 200)
+    crawler.start('二次元', 300)
