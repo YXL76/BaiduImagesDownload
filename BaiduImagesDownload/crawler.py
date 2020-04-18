@@ -21,11 +21,12 @@ class Crawler:
     __BASE_URL = 'https://image.baidu.com/search/acjson'
     __PAGE_NUM = 50
     __CONCURRENT_NUM = 100
+    __CONCURRENT_TIMEOUT = 60
     __OBJURL_TABLE = {'_z2C$q': ':', '_z&e3B': '.', 'AzdH3F': '/'}
     __OBJURL_TRANS = str.maketrans('0123456789abcdefghijklmnopqrstuvw', '7dgjmoru140852vsnkheb963wtqplifca')
     __FILENAME_TEMPLATE = Template('${name}${ext}')
 
-    def __init__(self):
+    def __init__(self, timeout: float = __CONCURRENT_TIMEOUT):
         self.__params = {
             'face': 0,
             'ie': 'utf-8',
@@ -35,75 +36,77 @@ class Crawler:
             'rn': self.__PAGE_NUM,
             'tn': 'resultjson_com',
         }
+        self.__timeout = timeout
         self.__urls = []
         print('----INFO----初始化成功')
-
-    def __decode_objurl(self, url: str) -> str:
-        for key, value in self.__OBJURL_TABLE.items():
-            url = url.replace(key, value)
-        return url.translate(self.__OBJURL_TRANS)
-
-    def __solve_imgdata(self, img: dict) -> dict:
-        urls = {
-            'obj_url': [],
-            'from_url': []
-        }
-        if 'objURL' in img:
-            urls['obj_url'].append(self.__decode_objurl(img['objURL']))
-            urls['from_url'].append(self.__decode_objurl(img['fromURL']))
-        if 'replaceUrl' in img and len(img['replaceUrl']) == 2:
-            urls['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
-            urls['from_url'].append(img['replaceUrl'][0]['FromURL'])
-        urls['obj_url'].append(img['thumbURL'])
-        urls['from_url'].append('')
-        return urls
 
     def clear(self) -> None:
         self.__params['pn'] = 0
         self.__urls.clear()
 
     def get_images_url(self, word: str, num: int) -> bool:
+
+        def __decode_objurl(url: str) -> str:
+            for key, value in self.__OBJURL_TABLE.items():
+                url = url.replace(key, value)
+            return url.translate(self.__OBJURL_TRANS)
+
+        def __solve_imgdata() -> dict:
+            urls = {
+                'obj_url': [],
+                'from_url': []
+            }
+            if 'objURL' in img:
+                urls['obj_url'].append(__decode_objurl(img['objURL']))
+                urls['from_url'].append(__decode_objurl(img['fromURL']))
+            if 'replaceUrl' in img and len(img['replaceUrl']) == 2:
+                urls['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
+                urls['from_url'].append(img['replaceUrl'][0]['FromURL'])
+            urls['obj_url'].append(img['thumbURL'])
+            urls['from_url'].append('')
+            return urls
+
         loaded = 0
         self.__params['pn'] = 0
         self.__params['queryWord'] = word
         self.__params['word'] = word
 
-        res = get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS)
-        if res.status_code != 200:
-            print('----ERROR---获取图片url失败')
-            return False
+        with get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS) as res:
+            if res.status_code != 200:
+                print('----ERROR---获取图片url失败')
+                return False
 
-        display_num = search(r'\"displayNum\":(\d+)', res.content.decode('utf-8'))
-        display_num = int(display_num.group(1))
-        if display_num < num:
-            num = display_num
-            print('----WARM----图片数量不足, 只有', num, '张')
+            display_num = search(r'\"displayNum\":(\d+)', res.text)
+            display_num = int(display_num.group(1))
+            if display_num < num:
+                num = display_num
+                print('----WARM----图片数量不足, 只有', num, '张')
 
         with tqdm(total=num, desc='获取url') as pbar:
             while loaded < num:
-                res = get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS)
-                if res.status_code != 200:
-                    print('----ERROR---获取图片url失败')
-                    return False
+                with get(self.__BASE_URL, params=self.__params, headers=self.__HEADERS) as res:
+                    if res.status_code != 200:
+                        print('----ERROR---获取图片url失败')
+                        return False
 
-                content = loads(res.content.decode('utf-8').replace(r'\'', ''), strict=False)
+                    content = loads(res.text.replace(r'\'', ''), strict=False)
 
-                length = 0
-                for img in content['data']:
-                    if 'thumbURL' in img and img['thumbURL'] != '':
-                        self.__urls.append(self.__solve_imgdata(img))
-                        length += 1
+                    length = 0
+                    for img in content['data']:
+                        if 'thumbURL' in img and img['thumbURL'] != '':
+                            self.__urls.append(__solve_imgdata())
+                            length += 1
 
-                if length == 0:
-                    pbar.update(num - loaded)
-                    break
+                    if length == 0:
+                        pbar.update(num - loaded)
+                        break
 
-                self.__params['pn'] += self.__PAGE_NUM
-                loaded += length
-                if loaded >= num:
-                    pbar.update(num - loaded + length)
-                else:
-                    pbar.update(length)
+                    self.__params['pn'] += self.__PAGE_NUM
+                    loaded += length
+                    if loaded >= num:
+                        pbar.update(num - loaded + length)
+                    else:
+                        pbar.update(length)
 
         print('----INFO----获取图片url成功')
         sleep(0.4)
@@ -120,7 +123,7 @@ class Crawler:
                 allow = True
             return allow, ext
 
-        async def fetch(session, obj_url: str, from_url: str, idx: int) -> bool:
+        async def __fetch(session, obj_url: str, from_url: str, idx: int) -> bool:
             headers.update({'Referer': from_url})
             try:
                 async with session.get(obj_url, headers=headers, allow_redirects=False) as res:
@@ -139,12 +142,12 @@ class Crawler:
                 return False
             return True
 
-        async def fetch_all(url: dict, idx: int) -> None:
+        async def __fetch_all(url: dict, idx: int) -> None:
             nonlocal success
             allow = False
             for j in range(len(url['obj_url'])):
-                async with ClientSession(timeout=ClientTimeout(total=60)) as session:
-                    allow = await fetch(session, url['obj_url'][j], url['from_url'][j], idx + 1)
+                async with ClientSession(timeout=ClientTimeout(total=self.__timeout)) as session:
+                    allow = await __fetch(session, url['obj_url'][j], url['from_url'][j], idx + 1)
                     if allow is True:
                         break
             if allow is False:
@@ -167,7 +170,7 @@ class Crawler:
         with TemporaryDirectory() as tmpdirname:
             for i in range(0, len(self.__urls), self.__CONCURRENT_NUM):
                 loop = get_event_loop()
-                tasks = [ensure_future(fetch_all(url, i + idx))
+                tasks = [ensure_future(__fetch_all(url, i + idx))
                          for idx, url in enumerate(self.__urls[i:i + self.__CONCURRENT_NUM])]
                 tasks = gather(*tasks)
                 loop.run_until_complete(tasks)
