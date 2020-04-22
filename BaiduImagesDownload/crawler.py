@@ -220,4 +220,4 @@ class Crawler:
 
 if __name__ == '__main__':
     crawler = Crawler()
-    crawler.start('二次元', 300)
+    crawler.start('二次元', 20)
