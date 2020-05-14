@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------------------------------------
+#---------------361b9ed-5ea4-4f4c-b932-a96516e6acab----------------------------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
@@ -11,9 +11,9 @@ FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
 
 # [Optional] If your requirements rarely change, uncomment this section to add them to the image.
 #
-# COPY requirements.txt /tmp/pip-tmp/
-# RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
-#    && rm -rf /tmp/pip-tmp
+COPY requirements.txt /tmp/pip-tmp/
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
+   && rm -rf /tmp/pip-tmp
 
 # [Optional] Uncomment this section to install additional packages.
 #
