@@ -58,7 +58,10 @@ class Crawler:
 
         elif 'replaceUrl' in img and len(img['replaceUrl']) == 2:
             url['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
-            url['from_url'].append(img['replaceUrl'][0]['FromURL'])
+            url['from_url'].append(img['replaceUrl'][1]['FromURL'])
+
+        url['obj_url'].append(img['middleURL'])
+        url['from_url'].append('')
 
         url['obj_url'].append(img['thumbURL'])
         url['from_url'].append('')
