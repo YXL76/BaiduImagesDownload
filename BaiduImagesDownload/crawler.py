@@ -1,6 +1,7 @@
 from aiohttp import ClientError as async_ClientError, ClientSession, ClientTimeout
 from asyncio import TimeoutError as async_TimeoutError, ensure_future, gather, get_event_loop
 from json import loads
+import logging
 from mimetypes import guess_extension
 from os import listdir, mkdir
 from os.path import exists, join, splitext
@@ -8,8 +9,17 @@ from re import search
 from shutil import copyfile
 from string import Template
 from tempfile import TemporaryDirectory
+from tqdm import tqdm
 from urllib.parse import urlencode
 from urllib.request import urlopen
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(logging.Formatter(
+    '%(asctime)s [%(levelname)s] %(message)s'))
+logger.addHandler(stream_handler)
 
 
 class Crawler:
@@ -37,7 +47,7 @@ class Crawler:
             'tn': 'resultjson_com',
         }
         self.__timeout = timeout
-        print('[INFO] 初始化成功')
+        logger.info('初始化成功')
 
     @staticmethod
     def decode_objurl(url: str) -> str:
@@ -80,17 +90,17 @@ class Crawler:
                     async with session.get(Crawler.__BASE_URL, params=params, headers=Crawler.__HEADERS) as res:
                         if res.status == 200:
                             text = await res.text()
+                            logger.debug(text)
                             text = loads(text.replace(r'\'', ''), strict=False)
 
                             for img in text['data']:
                                 if 'thumbURL' in img and img['thumbURL'] != '':
                                     urls.append(Crawler.solve_imgdata(img))
                         else:
+                            logger.debug('status' + str(res.status))
                             net = False
-                            print('[ERROR] 获取图片url失败')
                 except (async_ClientError, async_TimeoutError):
                     net = False
-                    print('[ERROR] 获取图片url失败')
 
         net = True
         eng = True
@@ -100,12 +110,11 @@ class Crawler:
         self.__params['queryWord'] = word
         self.__params['word'] = word
 
-        print('[INFO] 开始获取图片url')
+        logger.info('开始获取图片url')
 
         with urlopen((Crawler.__BASE_URL + '?%s') % urlencode(self.__params)) as r:
             if r.status != 200:
                 net = False
-                print('[ERROR] 获取图片url失败')
             else:
                 display_num = search(r'\"displayNum\":(\d+)',
                                      r.read().decode('utf-8'))
@@ -119,13 +128,20 @@ class Crawler:
             tasks = gather(*tasks)
             loop.run_until_complete(tasks)
 
-            print('[INFO] 获取图片url成功')
+        if net is False:
+            logger.error('网络连接失败')
 
-        if len(urls) < num:
+        length = len(urls)
+
+        if length != 0:
+            logger.info('获取图片url结束')
+
+        if length < num:
             eng = False
-            print('[WARM] 图片数量不足, 只有', len(urls), '张')
+            logger.warning('获取图片url结束')
+            num = length
 
-        return net, eng, urls
+        return net, eng, urls[0:num]
 
     @staticmethod
     async def __check_type(mime_type: str, rule: tuple) -> (bool, str):
@@ -168,6 +184,7 @@ class Crawler:
                 async with ClientSession(timeout=ClientTimeout(total=self.__timeout)) as session:
                     allow = await __fetch(session, url['obj_url'][j], url['from_url'][j], idx + 1)
                     if allow is True:
+                        pbar.update(1)
                         break
 
         success = 0
@@ -175,9 +192,11 @@ class Crawler:
         try:
             mkdir(path)
         except FileExistsError:
-            print('[INFO] 文件夹已存在')
+            logger.warning('文件夹已存在')
 
-        print('[INFO] 开始图片下载')
+        logger.info('开始图片下载')
+
+        pbar = tqdm(total=len(urls), ascii=True, miniters=1)
 
         with TemporaryDirectory() as tmpdirname:
             for i in range(0, len(urls), Crawler.__CONCURRENT_NUM):
@@ -194,16 +213,19 @@ class Crawler:
                 copyfile(join(tmpdirname, filename),
                          join(path, str(idx + 1).zfill(num_length) + splitext(filename)[1]))
 
-        print('[INFO] ', success, '张图片下载成功')
+        pbar.close()
+
+        logger.info(str(success) + '张图片下载成功')
 
         failed = len(urls) - success
         if failed:
-            print('[ERROR] ', failed, '张图片下载失败')
+            logger.error(str(failed) + '张图片下载失败')
 
         return success, failed
 
 
 if __name__ == '__main__':
+    logger.setLevel(logging.DEBUG)
     crawler = Crawler()
-    net, num, urls = crawler.get_images_url('二次元', 300)
+    net, num, urls = crawler.get_images_url('二次元', 20)
     crawler.download_images(urls)
