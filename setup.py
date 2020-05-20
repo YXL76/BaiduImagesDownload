@@ -9,7 +9,7 @@ REQUIRES = (HERE / "requirements.txt").read_text().strip().split('\n')
 
 setup(
     name="BaiduImagesDownload",
-    version="0.0.3",
+    version="1.0.0",
     description="download image from Baidu Image",
     long_description=README,
     long_description_content_type="text/markdown",
