@@ -16,14 +16,17 @@ Crawler.download_images(urls)
 目录
 
 -   [安装](#安装)
+
 -   [使用](#使用)
     -   [基本](#基本)
     -   [设置图片格式](#设置图片格式)
-    -   [设置 timeout](#设置timeout)
+    -   [设置timeout](#设置timeout)
+
 -   [文档](#文档)
     -   [get_images_url](#get_images_url)
     -   [download_images](#download_images)
     -   [日志](#日志)
+
 -   [许可](#许可)
 
 ## 安装
@@ -53,7 +56,7 @@ net, num, urls = Crawler.get_images_url('二次元', 20)
 Crawler.download_images(urls, rule=('.png', '.jpg'))
 ```
 
-### 设置 timeout
+### 设置timeout
 
 ```python
 from BaiduImagesDownload.crawler import Crawler

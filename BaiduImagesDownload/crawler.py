@@ -9,7 +9,7 @@ from shutil import copyfile
 from string import Template
 from tempfile import TemporaryDirectory
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from aiohttp import ClientError as async_ClientError, ClientSession, ClientTimeout
 from tqdm import tqdm
@@ -29,6 +29,7 @@ class Crawler:
                       'Chrome/80.0.3987.149 Safari/537.36 '
     }
     __BASE_URL = 'https://image.baidu.com/search/acjson'
+    __PAGE_NUM = 50
     __CONCURRENT_NUM = 100
     __CONCURRENT_TIMEOUT = 60
     __OBJURL_TABLE = {'_z2C$q': ':', '_z&e3B': '.', 'AzdH3F': '/'}
@@ -41,14 +42,13 @@ class Crawler:
         'ipn': 'rj',
         'oe': 'utf-8',
         'pn': 0,
-        'rn': 50,
+        'rn': __PAGE_NUM,
         'tn': 'resultjson_com',
     }
 
     @staticmethod
     def decode_objurl(url: str) -> str:
-        """
-        解密url
+        """解密url
 
         :param url: 从百度图片json接口中获取的加密url
         :return: 解密后的url
@@ -60,8 +60,7 @@ class Crawler:
 
     @staticmethod
     def solve_imgdata(img: dict) -> dict:
-        """
-        从json数据中提取url
+        """从json数据中提取url
 
         :param img: 获取的json数据项
         :return: 提取的url
@@ -89,8 +88,7 @@ class Crawler:
 
     @staticmethod
     def get_images_url(word: str, num: int, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
-        """
-        从百度图片的json接口中获取图片的url
+        """从百度图片的json接口中获取图片的url
 
         :param word: 搜索关键词
         :param num: 搜索数量
@@ -134,7 +132,8 @@ class Crawler:
 
         logger.info('开始获取图片url')
 
-        with urlopen((Crawler.__BASE_URL + '?%s') % urlencode(params)) as r:
+        req = Request((Crawler.__BASE_URL + '?%s') % urlencode(params))
+        with urlopen(req) as r:
             if r.status != 200:
                 net = False
             else:
@@ -167,8 +166,7 @@ class Crawler:
 
     @staticmethod
     async def __check_type(mime_type: str, rule: tuple) -> (bool, str):
-        """
-        判断MIME type是否符合下载的格式要求
+        """判断MIME type是否符合下载的格式要求
         MIME type和拓展名的对应关系：
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
 
@@ -192,8 +190,7 @@ class Crawler:
     def download_images(urls: list, rule: tuple = ('.png', '.jpg'),
                         path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT,
                         concurrent: int = __CONCURRENT_NUM) -> (int, int):
-        """
-        下载图片到指定文件夹中
+        """下载图片到指定文件夹中
 
         :param urls: 满足格式的urls
         :param rule: 允许下载的格式
