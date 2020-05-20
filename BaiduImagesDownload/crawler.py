@@ -48,12 +48,25 @@ class Crawler:
 
     @staticmethod
     def decode_objurl(url: str) -> str:
+        """
+        解密url
+
+        :param url: 从百度图片json接口中获取的加密url
+        :return: 解密后的url
+        """
+
         for key, value in Crawler.__OBJURL_TABLE.items():
             url = url.replace(key, value)
         return url.translate(Crawler.__OBJURL_TRANS)
 
     @staticmethod
     def solve_imgdata(img: dict) -> dict:
+        """
+        从json数据中提取url
+
+        :param img: 获取的json数据项
+        :return: 提取的url
+        """
         url = {
             'obj_url': [],
             'from_url': []
@@ -77,6 +90,18 @@ class Crawler:
 
     @staticmethod
     def get_images_url(word: str, num: int, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
+        """
+        从百度图片的json接口中获取图片的url
+
+        :param word: 搜索关键词
+        :param num: 搜索数量
+        :param timeout: 请求timeout, 默认60(s)
+        :return: (
+                    网络连接是否成功，成功为True，失败为False
+                    图片数量是否满足，满足为True，不足为False
+                    获取的urls
+                 )
+        """
 
         async def __fetch(pn: int) -> None:
             nonlocal net
@@ -143,6 +168,19 @@ class Crawler:
 
     @staticmethod
     async def __check_type(mime_type: str, rule: tuple) -> (bool, str):
+        """
+        判断MIME type是否符合下载的格式要求
+        MIME type和拓展名的对应关系：
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+
+        :param mime_type: 当前图片的MIME type
+        :param rule: 允许下载的格式
+        :return: (
+                    是否允许，允许为True，禁止为False
+                    MIME type对应的拓展名
+                 )
+        """
+
         allow = False
         ext = guess_extension(mime_type)
         if ext in ('.jpe', '.jpeg'):
@@ -154,6 +192,18 @@ class Crawler:
     @staticmethod
     def download_images(urls: list, rule: tuple = ('.png', '.jpg'),
                         path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT) -> (int, int):
+        """
+        下载图片到指定文件夹中
+
+        :param urls: 满足格式的urls
+        :param rule: 允许下载的格式
+        :param path: 图片下载的路径
+        :param timeout: 请求timeout, 默认60(s)
+        :return: (
+                    下载成功的数量
+                    下载失败的数量
+                 )
+        """
 
         async def __fetch(session, obj_url: str, from_url: str, idx: int) -> bool:
             headers = Crawler.__HEADERS.copy()
