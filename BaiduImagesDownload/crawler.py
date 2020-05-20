@@ -29,7 +29,6 @@ class Crawler:
                       'Chrome/80.0.3987.149 Safari/537.36 '
     }
     __BASE_URL = 'https://image.baidu.com/search/acjson'
-    __PAGE_NUM = 50
     __CONCURRENT_NUM = 100
     __CONCURRENT_TIMEOUT = 60
     __OBJURL_TABLE = {'_z2C$q': ':', '_z&e3B': '.', 'AzdH3F': '/'}
@@ -42,7 +41,7 @@ class Crawler:
         'ipn': 'rj',
         'oe': 'utf-8',
         'pn': 0,
-        'rn': __PAGE_NUM,
+        'rn': 50,
         'tn': 'resultjson_com',
     }
 
