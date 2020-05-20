@@ -191,7 +191,8 @@ class Crawler:
 
     @staticmethod
     def download_images(urls: list, rule: tuple = ('.png', '.jpg'),
-                        path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT) -> (int, int):
+                        path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT,
+                        concurrent: int = __CONCURRENT_NUM) -> (int, int):
         """
         下载图片到指定文件夹中
 
@@ -199,6 +200,7 @@ class Crawler:
         :param rule: 允许下载的格式
         :param path: 图片下载的路径
         :param timeout: 请求timeout, 默认60(s)
+        :param concurrent: 并行下载的数量，默认100
         :return: (
                     下载成功的数量
                     下载失败的数量
@@ -249,10 +251,10 @@ class Crawler:
         pbar = tqdm(total=len(urls), ascii=True, miniters=1)
 
         with TemporaryDirectory() as tmpdirname:
-            for i in range(0, len(urls), Crawler.__CONCURRENT_NUM):
+            for i in range(0, len(urls), concurrent):
                 loop = get_event_loop()
                 tasks = [ensure_future(__fetch_all(url, i + idx))
-                         for idx, url in enumerate(urls[i:i + Crawler.__CONCURRENT_NUM])]
+                         for idx, url in enumerate(urls[i:i + concurrent])]
                 tasks = gather(*tasks)
                 loop.run_until_complete(tasks)
 
