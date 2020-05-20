@@ -8,11 +8,14 @@ from re import search
 from shutil import copyfile
 from string import Template
 from tempfile import TemporaryDirectory
+from typing import NewType, Dict, List
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from aiohttp import ClientError as async_ClientError, ClientSession, ClientTimeout
 from tqdm import tqdm
+
+URLS = NewType('URLS', Dict[str, list])
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -48,8 +51,8 @@ class Crawler:
 
     @staticmethod
     def decode_objurl(url: str) -> str:
-        """解密url
-
+        """
+        解密url
         :param url: 从百度图片json接口中获取的加密url
         :return: 解密后的url
         """
@@ -60,7 +63,8 @@ class Crawler:
 
     @staticmethod
     def solve_imgdata(img: dict) -> dict:
-        """从json数据中提取url
+        """
+        从json数据中提取url
 
         :param img: 获取的json数据项
         :return: 提取的url
@@ -88,7 +92,8 @@ class Crawler:
 
     @staticmethod
     def get_images_url(word: str, num: int, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
-        """从百度图片的json接口中获取图片的url
+        """
+        从百度图片的json接口中获取图片的url
 
         :param word: 搜索关键词
         :param num: 搜索数量
@@ -166,7 +171,8 @@ class Crawler:
 
     @staticmethod
     async def __check_type(mime_type: str, rule: tuple) -> (bool, str):
-        """判断MIME type是否符合下载的格式要求
+        """
+        判断MIME type是否符合下载的格式要求
         MIME type和拓展名的对应关系：
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
 
@@ -187,10 +193,11 @@ class Crawler:
         return allow, ext
 
     @staticmethod
-    def download_images(urls: list, rule: tuple = ('.png', '.jpg'),
+    def download_images(urls: List[URLS], rule: tuple = ('.png', '.jpg'),
                         path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT,
                         concurrent: int = __CONCURRENT_NUM) -> (int, int):
-        """下载图片到指定文件夹中
+        """
+        下载图片到指定文件夹中
 
         :param urls: 满足格式的urls
         :param rule: 允许下载的格式
