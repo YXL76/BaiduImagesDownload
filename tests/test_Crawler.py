@@ -14,7 +14,9 @@ def test_decode_objurl():
 
 def test_solve_imgdata():
     url = Crawler.solve_imgdata(
-        loads(r"""{"thumbURL": "thumbURL","middleURL": "middleURL","replaceUrl": [{"ObjURL": "ObjURL-0","FromURL": "FromURL-0"},{"ObjURL": "ObjURL-1","FromURL": "FromURL-1"}]}""", strict=False))
+        loads(
+            r"""{"thumbURL": "thumbURL","middleURL": "middleURL","replaceUrl": [{"ObjURL": "ObjURL-0","FromURL": "FromURL-0"},{"ObjURL": "ObjURL-1","FromURL": "FromURL-1"}]}""", strict=False),
+        True)
     assert url['obj_url'][0] == 'ObjURL-1'
     assert url['obj_url'][1] == 'middleURL'
     assert url['obj_url'][2] == 'thumbURL'
