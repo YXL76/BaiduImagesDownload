@@ -93,7 +93,7 @@ class Crawler:
     @staticmethod
     def download_images(urls: list, rule: tuple = ('.png', '.jpg'),
                         path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT,
-                        concurrent: int = __CONCURRENT_NUM) -> (int, int):
+                        concurrent: int = __CONCURRENT_NUM, command: bool = True) -> (int, int):
 ```
 
 参数
@@ -103,6 +103,7 @@ class Crawler:
 -   `path: str, optional`: 图片下载的路径，默认为`'download'`
 -   `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
 -   `concurrent: int, optional`: 并行下载的数量，默认为`100`
+-   `command: bool, optional`: 是否在控制台显示进度条，默认为`True`
 
 返回
 
@@ -115,7 +116,7 @@ class Crawler:
 
 ```python
 import logging
-from BaiduImagesDownload.crawler import logging
+from BaiduImagesDownload.crawler import logger
 
 # 设置日志的等级为DEBUG
 # 默认为INFO
