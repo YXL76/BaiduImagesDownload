@@ -201,7 +201,7 @@ class Crawler:
     @staticmethod
     def download_images(urls: List[URLS], rule: tuple = ('.png', '.jpg'),
                         path: str = 'download', timeout: int = __CONCURRENT_TIMEOUT,
-                        concurrent: int = __CONCURRENT_NUM) -> (int, int):
+                        concurrent: int = __CONCURRENT_NUM, command: bool = True) -> (int, int):
         """
         下载图片到指定文件夹中
 
@@ -210,6 +210,7 @@ class Crawler:
         :param path: 图片下载的路径
         :param timeout: 请求timeout, 默认60(s)
         :param concurrent: 并行下载的数量，默认100
+        :param command: 是否在控制台显示进度条
         :return: (
                     下载成功的数量
                     下载失败的数量
@@ -245,7 +246,8 @@ class Crawler:
                 async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
                     allow = await __fetch(session, url['obj_url'][j], url['from_url'][j], idx + 1)
                     if allow is True:
-                        pbar.update(1)
+                        if command is True:
+                            pbar.update(1)
                         break
 
         success = 0
@@ -257,7 +259,8 @@ class Crawler:
 
         logger.info('开始图片下载')
 
-        pbar = tqdm(total=len(urls), ascii=True, miniters=1)
+        if command is True:
+            pbar = tqdm(total=len(urls), ascii=True, miniters=1)
 
         with TemporaryDirectory() as tmpdirname:
             for i in range(0, len(urls), concurrent):
@@ -276,7 +279,8 @@ class Crawler:
                 copyfile(join(tmpdirname, filename),
                          join(path, str(idx + 1).zfill(num_length) + splitext(filename)[1]))
 
-        pbar.close()
+        if command is True:
+            pbar.close()
 
         logger.info(str(success) + '张图片下载成功')
 
