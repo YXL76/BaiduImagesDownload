@@ -18,11 +18,13 @@ Crawler.download_images(urls)
 -   [安装](#安装)
 
 -   [使用](#使用)
+
     -   [基本](#基本)
     -   [设置图片格式](#设置图片格式)
-    -   [设置timeout](#设置timeout)
+    -   [设置 timeout](#设置timeout)
 
 -   [文档](#文档)
+
     -   [get_images_url](#get_images_url)
     -   [download_images](#download_images)
     -   [日志](#日志)
@@ -42,27 +44,19 @@ pip install BaiduImagesDownload
 ```python
 from BaiduImagesDownload.crawler import Crawler
 
-net, num, urls = Crawler.get_images_url('二次元', 20)
+# original为True代表优先下载原图
+net, num, urls = Crawler.get_images_url('二次元', 20, original=True)
 Crawler.download_images(urls)
 ```
 
-### 设置图片格式
+### 下载设置
 
 ```python
 from BaiduImagesDownload.crawler import Crawler
 
-# rule默认为('.png', '.jpg')
+# rule设置允许的图片格式，默认为('.png', '.jpg')
+# timeout为超时时间，默认为60(s)
 net, num, urls = Crawler.get_images_url('二次元', 20)
-Crawler.download_images(urls, rule=('.png', '.jpg'))
-```
-
-### 设置timeout
-
-```python
-from BaiduImagesDownload.crawler import Crawler
-
-# timeout默认为60(s)
-net, num, urls = Crawler.get_images_url('二次元', 20, timeout=60)
 Crawler.download_images(urls, rule=('.png', '.jpg'), timeout=60)
 ```
 
@@ -74,14 +68,16 @@ Crawler.download_images(urls, rule=('.png', '.jpg'), timeout=60)
 class Crawler:
 
     @staticmethod
-    def get_images_url(word: str, num: int, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
+    def get_images_url(word: str, num: int, original: bool = True,
+                       timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
 ```
 
 参数
 
 -   `word: str`: 搜索关键词
 -   `num: int`: 搜索数量
--   `timeout: int`: 请求 timeout, 默认为`60(s)`
+-   `original： bool, optional`：是否下原图，默认为`True`
+-   `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
 
 返回
 
