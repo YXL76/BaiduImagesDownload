@@ -1,8 +1,8 @@
 import logging
-from asyncio import TimeoutError as async_TimeoutError, ensure_future, gather, get_event_loop
+from asyncio import TimeoutError as async_TimeoutError, ensure_future, gather, get_event_loop, new_event_loop, set_event_loop
 from json import loads
 from mimetypes import guess_extension
-from os import listdir, mkdir
+from os import listdir, makedirs
 from os.path import join, splitext
 from re import search
 from shutil import copyfile
@@ -148,6 +148,8 @@ class Crawler:
                 num = min(num, display_num)
 
         if net is True:
+            new_loop = new_event_loop()
+            set_event_loop(new_loop)
             loop = get_event_loop()
             tasks = [ensure_future(__fetch(i))
                      for i in range(0, num, Crawler.__PAGE_NUM)]
@@ -245,7 +247,7 @@ class Crawler:
         success = 0
 
         try:
-            mkdir(path)
+            makedirs(path)
         except FileExistsError:
             logger.warning('文件夹已存在')
 
@@ -255,6 +257,8 @@ class Crawler:
 
         with TemporaryDirectory() as tmpdirname:
             for i in range(0, len(urls), concurrent):
+                new_loop = new_event_loop()
+                set_event_loop(new_loop)
                 loop = get_event_loop()
                 tasks = [ensure_future(__fetch_all(url, i + idx))
                          for idx, url in enumerate(urls[i:i + concurrent])]
@@ -282,4 +286,4 @@ class Crawler:
 if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     net_, num_, urls_ = Crawler.get_images_url('二次元', 20)
-    Crawler.download_images(urls_)
+    Crawler.download_images(urls_, path='download/test')
