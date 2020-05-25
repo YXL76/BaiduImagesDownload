@@ -62,7 +62,7 @@ class Crawler:
         return url.translate(Crawler.__OBJURL_TRANS)
 
     @staticmethod
-    def solve_imgdata(img: dict) -> dict:
+    def solve_imgdata(img: dict, original: bool) -> dict:
         """
         从json数据中提取url
 
@@ -74,16 +74,18 @@ class Crawler:
             'from_url': []
         }
 
-        if 'objURL' in img:
-            url['obj_url'].append(Crawler.decode_objurl(img['objURL']))
-            url['from_url'].append(Crawler.decode_objurl(img['fromURL']))
+        if original is True:
+            if 'objURL' in img:
+                url['obj_url'].append(Crawler.decode_objurl(img['objURL']))
+                url['from_url'].append(Crawler.decode_objurl(img['fromURL']))
 
-        elif 'replaceUrl' in img and len(img['replaceUrl']) == 2:
-            url['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
-            url['from_url'].append(img['replaceUrl'][1]['FromURL'])
+            elif 'replaceUrl' in img and len(img['replaceUrl']) == 2:
+                url['obj_url'].append(img['replaceUrl'][1]['ObjURL'])
+                url['from_url'].append(img['replaceUrl'][1]['FromURL'])
 
-        url['obj_url'].append(img['middleURL'])
-        url['from_url'].append('')
+        if 'middleURL' in img and img['middleURL'] != '':
+            url['obj_url'].append(img['middleURL'])
+            url['from_url'].append('')
 
         url['obj_url'].append(img['thumbURL'])
         url['from_url'].append('')
@@ -91,12 +93,13 @@ class Crawler:
         return url
 
     @staticmethod
-    def get_images_url(word: str, num: int, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
+    def get_images_url(word: str, num: int, original: bool = True, timeout: int = __CONCURRENT_TIMEOUT) -> (bool, bool, list):
         """
         从百度图片的json接口中获取图片的url
 
         :param word: 搜索关键词
         :param num: 搜索数量
+        :param original: 是否下载原图
         :param timeout: 请求timeout, 默认60(s)
         :return: (
                     网络连接是否成功，成功为True，失败为False
@@ -120,7 +123,8 @@ class Crawler:
 
                             for img in text['data']:
                                 if 'thumbURL' in img and img['thumbURL'] != '':
-                                    urls.append(Crawler.solve_imgdata(img))
+                                    urls.append(
+                                        Crawler.solve_imgdata(img, original))
                         else:
                             logger.debug('status' + str(res.status))
                             net = False
@@ -285,5 +289,5 @@ class Crawler:
 
 if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
-    net_, num_, urls_ = Crawler.get_images_url('二次元', 20)
+    net_, num_, urls_ = Crawler.get_images_url('二次元', 20, original=False)
     Crawler.download_images(urls_, path='download/test')
