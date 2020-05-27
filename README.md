@@ -76,13 +76,13 @@ class Crawler:
 
 -   `word: str`: 搜索关键词
 -   `num: int`: 搜索数量
--   `original： bool, optional`：是否下原图，默认为`True`
+-   `original: bool, optional`：是否下原图，默认为`True`
 -   `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
 
 返回
 
--   `net: bool`: 网络连接是否成功，成功为 True，失败为 False
--   `num: bool`: 图片数量是否满足，满足为 True，不足为 False
+-   `net: bool`: 网络连接是否成功，成功为`True`，失败为`False`
+-   `num: bool`: 图片数量是否满足，满足为`True`，不足为`False`
 -   `urls: list`: 获取的 urls，每项为一个`dict`，其中有两个键`obj_url`，`from_url`。`obj_url`为对应图片的`url`，`from_url`为`Referer`
 
 ### download_images
