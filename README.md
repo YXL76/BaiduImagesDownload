@@ -7,7 +7,7 @@
 > `BaiduImagesDownload`是一个快速、简单百度图片爬取工具
 
 ```python
-from BaiduImagesDownload.crawler import Crawler
+from BaiduImagesDownload import Crawler
 
 net, num, urls = Crawler.get_images_url('二次元', 20)
 Crawler.download_images(urls)
@@ -37,7 +37,7 @@ pip install BaiduImagesDownload
 ### 基本
 
 ```python
-from BaiduImagesDownload.crawler import Crawler
+from BaiduImagesDownload import Crawler
 
 # original为True代表优先下载原图
 net, num, urls = Crawler.get_images_url('二次元', 20, original=True)
@@ -47,7 +47,7 @@ Crawler.download_images(urls)
 ### 下载设置
 
 ```python
-from BaiduImagesDownload.crawler import Crawler
+from BaiduImagesDownload import Crawler
 
 # rule设置允许的图片格式，默认为('.png', '.jpg')
 # timeout为超时时间，默认为60(s)
@@ -111,7 +111,7 @@ class Crawler:
 
 ```python
 import logging
-from BaiduImagesDownload.crawler import logger
+from BaiduImagesDownload import logger
 
 # 设置日志的等级为DEBUG
 # 默认为INFO
