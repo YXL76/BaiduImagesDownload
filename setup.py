@@ -1,11 +1,12 @@
 import pathlib
+
 from setuptools import setup
 
 HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
 
-REQUIRES = (HERE / "requirements.txt").read_text().strip().split('\n')
+REQUIRES = (HERE / "requirements.txt").read_text().strip().split("\n")
 
 setup(
     name="BaiduImagesDownload",

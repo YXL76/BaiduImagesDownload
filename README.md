@@ -15,21 +15,16 @@ Crawler.download_images(urls)
 
 目录
 
--   [安装](#安装)
-
--   [使用](#使用)
-
-    -   [基本](#基本)
-    -   [设置图片格式](#设置图片格式)
-    -   [设置 timeout](#设置timeout)
-
--   [文档](#文档)
-
-    -   [get_images_url](#get_images_url)
-    -   [download_images](#download_images)
-    -   [日志](#日志)
-
--   [许可](#许可)
+- [BaiduImagesDownload](#baiduimagesdownload)
+  - [安装](#安装)
+  - [使用](#使用)
+    - [基本](#基本)
+    - [下载设置](#下载设置)
+  - [文档](#文档)
+    - [get_images_url](#get_images_url)
+    - [download_images](#download_images)
+    - [日志](#日志)
+  - [许可](#许可)
 
 ## 安装
 
@@ -74,16 +69,16 @@ class Crawler:
 
 参数
 
--   `word: str`: 搜索关键词
--   `num: int`: 搜索数量
--   `original： bool, optional`：是否下原图，默认为`True`
--   `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
+- `word: str`: 搜索关键词
+- `num: int`: 搜索数量
+- `original： bool, optional`：是否下原图，默认为`True`
+- `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
 
 返回
 
--   `net: bool`: 网络连接是否成功，成功为 True，失败为 False
--   `num: bool`: 图片数量是否满足，满足为 True，不足为 False
--   `urls: list`: 获取的 urls，每项为一个`dict`，其中有两个键`obj_url`，`from_url`。`obj_url`为对应图片的`url`，`from_url`为`Referer`
+- `net: bool`: 网络连接是否成功，成功为 True，失败为 False
+- `num: bool`: 图片数量是否满足，满足为 True，不足为 False
+- `urls: list`: 获取的 urls，每项为一个`dict`，其中有两个键`obj_url`，`from_url`。`obj_url`为对应图片的`url`，`from_url`为`Referer`
 
 ### download_images
 
@@ -98,17 +93,17 @@ class Crawler:
 
 参数
 
--   `urls: list`: 需要爬的图片列表，格式与`get_images_url`返回的相同
--   `rule: tuple, optional`: 允许下载的格式，默认为`('.png', '.jpg')`
--   `path: str, optional`: 图片下载的路径，默认为`'download'`
--   `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
--   `concurrent: int, optional`: 并行下载的数量，默认为`100`
--   `command: bool, optional`: 是否在控制台显示进度条，默认为`True`
+- `urls: list`: 需要爬的图片列表，格式与`get_images_url`返回的相同
+- `rule: tuple, optional`: 允许下载的格式，默认为`('.png', '.jpg')`
+- `path: str, optional`: 图片下载的路径，默认为`'download'`
+- `timeout: int, optional`: 请求 timeout, 默认为`60(s)`
+- `concurrent: int, optional`: 并行下载的数量，默认为`100`
+- `command: bool, optional`: 是否在控制台显示进度条，默认为`True`
 
 返回
 
--   `success: int`: 下载成功的数量
--   `failed: int`: 下载失败的数量
+- `success: int`: 下载成功的数量
+- `failed: int`: 下载失败的数量
 
 ### 日志
 
