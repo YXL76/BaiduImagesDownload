@@ -100,7 +100,7 @@ class Crawler:
         num: int,
         original: bool = True,
         timeout: int = __CONCURRENT_TIMEOUT,
-    ) -> Tuple(bool, bool, list):
+    ) -> Tuple[bool, bool, list]:
         """
         从百度图片的json接口中获取图片的url
 
@@ -193,7 +193,7 @@ class Crawler:
         return net, eng, urls[0:num]
 
     @staticmethod
-    async def __check_type(mime_type: str, rule: tuple) -> Tuple(bool, str):
+    async def __check_type(mime_type: str, rule: tuple) -> Tuple[bool, str]:
         """
         判断MIME type是否符合下载的格式要求
         MIME type和拓展名的对应关系：
@@ -223,7 +223,7 @@ class Crawler:
         timeout: int = __CONCURRENT_TIMEOUT,
         concurrent: int = __CONCURRENT_NUM,
         command: bool = True,
-    ) -> Tuple(int, int):
+    ) -> Tuple[int, int]:
         """
         下载图片到指定文件夹中
 
