@@ -4,7 +4,7 @@ from os import getcwd
 
 sys.path.append(getcwd())
 
-from crawler import Crawler
+from BaiduImagesDownload import Crawler
 
 
 def test_decode_objurl():
