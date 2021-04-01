@@ -3,6 +3,7 @@
 [![Python package](https://github.com/YXL76/BaiduImagesDownload/workflows/Python%20package/badge.svg)](https://github.com/YXL76/BaiduImagesDownload/actions)
 [![codecov](https://codecov.io/gh/YXL76/BaiduImagesDownload/branch/master/graph/badge.svg)](https://codecov.io/gh/YXL76/BaiduImagesDownload)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/0dce5ee6b45f427fa5aa782907408d19)](https://www.codacy.com/manual/YXL76/BaiduImagesDownload?utm_source=github.com&utm_medium=referral&utm_content=YXL76/BaiduImagesDownload&utm_campaign=Badge_Grade)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FYXL76%2FBaiduImagesDownload.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FYXL76%2FBaiduImagesDownload?ref=badge_shield)
 
 > `BaiduImagesDownload`是一个快速、简单百度图片爬取工具
 
@@ -127,3 +128,7 @@ logger.addHandler(file_handler)
 ## 许可
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/YXL76/BaiduImagesDownload/blob/master/LICENSE)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FYXL76%2FBaiduImagesDownload.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FYXL76%2FBaiduImagesDownload?ref=badge_large)
